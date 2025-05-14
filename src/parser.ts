@@ -88,7 +88,9 @@ import {
   WhileStatement,
   ModuleDeclaration,
 
-  mangleInternalPath
+  mangleInternalPath,
+  YieldExpression,
+  YieldAsteriskExpression
 } from "./ast";
 
 /** Represents a dependee. */
@@ -281,8 +283,19 @@ export class Parser extends DiagnosticEmitter {
       }
       case Token.Function: {
         tn.next();
-        statement = this.parseFunction(tn, flags, decorators, startPos);
-        decorators = null;
+        if (tn.peek() == Token.Asterisk) {
+          startPos = tn.nextTokenPos
+          tn.next();
+          let funcDecl = this.parseFunction(tn, flags, decorators, startPos);
+          if (funcDecl) {
+            funcDecl.isGenerator = true
+          }
+          statement = funcDecl
+          decorators = null;
+        } else {
+          statement = this.parseFunction(tn, flags, decorators, startPos);
+          decorators = null;
+        }
         break;
       }
       case Token.Abstract: {
@@ -3648,9 +3661,8 @@ export class Parser extends DiagnosticEmitter {
     let startPos = tn.tokenPos;
     switch (token) {
 
-      // TODO: SpreadExpression, YieldExpression
+      // TODO: SpreadExpression
       case Token.Dot_Dot_Dot:
-      case Token.Yield: // fallthrough to unsupported UnaryPrefixExpression
 
       // UnaryPrefixExpression
       case Token.Exclamation:
@@ -3663,6 +3675,19 @@ export class Parser extends DiagnosticEmitter {
         let operand = this.parseExpression(tn, Precedence.UnaryPrefix);
         if (!operand) return null;
         return Node.createUnaryPrefixExpression(token, operand, tn.range(startPos, tn.pos));
+      }
+      case Token.Yield: {
+        if (tn.peek() == Token.Asterisk) {
+          tn.next()
+          startPos = tn.tokenPos
+          let operand = this.parseExpression(tn, Precedence.UnaryPrefix);
+          if (!operand) return null;
+          return new YieldAsteriskExpression(tn.range(startPos, tn.pos), operand);
+        } else {
+          let operand = this.parseExpression(tn, Precedence.UnaryPrefix);
+          if (!operand) return null;
+          return new YieldExpression(tn.range(startPos, tn.pos), operand);
+        }
       }
       case Token.Plus_Plus:
       case Token.Minus_Minus: {

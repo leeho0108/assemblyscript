@@ -80,6 +80,8 @@ export const enum NodeKind {
   UnaryPostfix,
   UnaryPrefix,
   Compiled,
+  Yield,
+  YieldAsterisk,
 
   // statements
   Block,
@@ -2057,6 +2059,7 @@ export const enum ArrowKind {
 
 /** Represents a `function` declaration. */
 export class FunctionDeclaration extends DeclarationStatement {
+  isGenerator:boolean = false
   constructor(
     /** Simple name being declared. */
     name: IdentifierExpression,
@@ -2386,6 +2389,28 @@ export class WhileStatement extends Statement {
     range: Range
   ) {
     super(NodeKind.While, range);
+  }
+}
+
+export class YieldExpression extends Expression {
+  /** The inner expression to yield. */
+  expression: Expression;
+  /** Marker that this is a yield. */
+  isYield: bool = true;
+  constructor(range: Range, expression: Expression) {
+    super(NodeKind.Yield, range);
+    this.expression = expression;
+  }
+}
+
+export class YieldAsteriskExpression extends Expression {
+  /** The inner expression to yield. */
+  expression: Expression;
+  /** Marker that this is a yield. */
+  isYieldAsterisk: bool = true;
+  constructor(range: Range, expression: Expression) {
+    super(NodeKind.YieldAsterisk, range);
+    this.expression = expression;
   }
 }
 
